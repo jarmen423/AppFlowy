@@ -3,10 +3,11 @@ import 'dart:io';
 
 import 'package:appflowy/plugins/document/presentation/local_file/local_file_info.dart';
 import 'package:appflowy/shared/markdown_to_document.dart';
-import 'package:appflowy/util/debounce.dart';
+import 'package:appflowy/util/debounce.dart' as af;
 import 'package:appflowy/util/throttle.dart';
 import 'package:appflowy_backend/log.dart';
 import 'package:appflowy_editor/appflowy_editor.dart';
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 
 /// Handles read / write / roundtrip for a local Markdown or text file
@@ -23,7 +24,7 @@ class LocalFilePersistence {
   final Duration debounceDuration;
   final Duration throttleDuration;
 
-  Debounce? _saveDebouncer;
+  af.Debounce? _saveDebouncer;
   Throttler? _readThrottler;
 
   /// Last successfully read/written content (used for cheap external change detection).
@@ -66,7 +67,7 @@ class LocalFilePersistence {
     required EditorState editorState,
     VoidCallback? onSaved,
   }) async {
-    _saveDebouncer ??= Debounce(duration: debounceDuration);
+    _saveDebouncer ??= af.Debounce(duration: debounceDuration);
 
     _saveDebouncer!.call(() async {
       await _doSave(info, editorState, onSaved);

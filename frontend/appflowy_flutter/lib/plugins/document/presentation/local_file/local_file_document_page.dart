@@ -5,12 +5,12 @@ import 'dart:io';
 import 'package:appflowy/core/helpers/url_launcher.dart';
 import 'package:appflowy/generated/flowy_svgs.g.dart';
 import 'package:appflowy/plugins/document/presentation/editor_page.dart';
+import 'package:appflowy/plugins/document/application/document_appearance_cubit.dart';
 import 'package:appflowy/plugins/document/presentation/editor_style.dart';
 import 'package:appflowy/plugins/document/presentation/local_file/local_file_info.dart';
 import 'package:appflowy/plugins/document/presentation/local_file/local_file_persistence.dart';
 import 'package:appflowy/shared/feature_flags.dart';
 import 'package:appflowy/startup/startup.dart';
-import 'package:appflowy/workspace/application/settings/appearance/document_appearance_cubit.dart';
 import 'package:appflowy/workspace/application/view/view_ext.dart';
 import 'package:appflowy/workspace/application/view/view_service.dart';
 import 'package:appflowy/workspace/presentation/home/toast.dart';
@@ -22,6 +22,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flowy_infra/file_picker/file_picker_service.dart';
 import 'package:flowy_infra_ui/flowy_infra_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:path/path.dart' as p;
 import 'package:universal_platform/universal_platform.dart';
 import 'package:watcher/watcher.dart';
@@ -202,6 +203,7 @@ class _LocalFileDocumentPageState extends State<LocalFileDocumentPage> {
             editorState: editorState,
             styleCustomizer: EditorStyleCustomizer(
               context: context,
+              padding: EditorStyleCustomizer.documentPadding,
               width: context.read<DocumentAppearanceCubit>().state.width,
             ),
             header: _buildLinkedHeader(info),
@@ -231,12 +233,12 @@ class _LocalFileDocumentPageState extends State<LocalFileDocumentPage> {
           FlowyIconButton(
             icon: const Icon(Icons.refresh, size: 16),
             onPressed: _reloadFromDisk,
-            tooltip: 'Reload from disk',
+            tooltipText: 'Reload from disk',
           ),
           FlowyIconButton(
             icon: const Icon(Icons.folder_open, size: 16),
             onPressed: _revealInFileManager,
-            tooltip: 'Reveal in file manager',
+            tooltipText: 'Reveal in file manager',
           ),
         ],
       ),
@@ -276,7 +278,7 @@ class _LocalFileDocumentPageState extends State<LocalFileDocumentPage> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const FlowySvg(FlowySvgs.error_s, size: Size.square(48)),
+          const Icon(Icons.error_outline, size: 48),
           const VSpace(16),
           FlowyText(
             _errorMessage ?? 'Unable to open linked file',

@@ -1,8 +1,31 @@
 name: Build Windows (Manual)
 
+# ============================================================
+# THIS WORKFLOW IS 100% MANUAL ONLY
+# It will NEVER trigger automatically on push, PR, schedule, etc.
+#
+# How to use:
+#   1. Push your changes (see note below about skipping CI)
+#   2. Go to: Actions tab → "Build Windows (Manual)" → "Run workflow"
+#   3. Choose "debug" (recommended for testing) or "release"
+#
+# To avoid triggering the main Flutter-CI on push:
+#   - Add "[skip ci]" or "[ci skip]" anywhere in your commit message
+#   Example: git commit -m "test local file feature [skip ci]"
+# ============================================================
+
 on:
+  # =====================================================
+  # MANUAL ONLY - This is the correct and intended trigger.
+  # =====================================================
   workflow_dispatch:
     inputs:
+
+  # DO NOT UNCOMMENT the section below unless you know what you're doing.
+  # push:
+  #   branches: [ "windows-test/*" ]
+  # pull_request:
+  #   branches: [ "windows-test/*" ]
       build_type:
         description: "Build type"
         required: true
