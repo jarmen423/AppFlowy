@@ -4,11 +4,17 @@ import 'dart:io';
 import 'package:appflowy/generated/locale_keys.g.dart';
 import 'package:appflowy/plugins/document/application/document_data_pb_extension.dart';
 import 'package:appflowy/plugins/document/presentation/editor_plugins/migration/editor_migration.dart';
+import 'package:appflowy/plugins/document/presentation/local_file/local_file_info.dart';
+import 'package:appflowy/shared/feature_flags.dart';
 import 'package:appflowy/shared/markdown_to_document.dart';
 import 'package:appflowy/startup/startup.dart';
 import 'package:appflowy/workspace/application/settings/share/import_service.dart';
+import 'package:appflowy/workspace/application/view/view_ext.dart';
+import 'package:appflowy/workspace/application/view/view_service.dart';
 import 'package:appflowy/workspace/presentation/home/menu/sidebar/import/import_type.dart';
+import 'package:appflowy/workspace/presentation/home/toast.dart';
 import 'package:appflowy_backend/protobuf/flowy-folder/protobuf.dart';
+import 'package:universal_platform/universal_platform.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flowy_infra/file_picker/file_picker_service.dart';
 import 'package:flowy_infra_ui/flowy_infra_ui.dart';
@@ -203,6 +209,39 @@ class _ImportPanelState extends State<ImportPanel> {
               ..viewLayout = ViewLayoutPB.Grid
               ..importType = ImportTypePB.AFDatabase,
           );
+          break;
+
+        case ImportType.linkMarkdownOrText:
+          // Live link (not import). Only supported on desktop and when the feature flag is on.
+          if (!UniversalPlatform.isDesktop ||
+              !FeatureFlag.linkedLocalFiles.isOn) {
+            showSnackBarMessage(
+              context,
+              'Linking local files is currently only available on desktop.',
+            );
+            continue;
+          }
+          final info = LinkedFileInfo(
+            path: path,
+            type: p.extension(path).toLowerCase().contains('md')
+                ? 'markdown'
+                : 'text',
+            linkedAt: DateTime.now().millisecondsSinceEpoch,
+          );
+          // Create the view with metadata; content will be loaded client-side from disk.
+          final createResult = await ViewBackendService.createView(
+            layoutType: ViewLayoutPB.Document,
+            parentViewId: parentViewId,
+            name: name,
+            ext: {
+              ViewExtKeys.linkedFileKey: info.toJsonString(),
+            },
+          );
+          createResult.onFailure((e) {
+            showSnackBarMessage(context, 'Failed to link file: ${e.msg}');
+          });
+          // We do not add to importValues; the view already exists.
+          // The outer callback will still be invoked by the panel caller.
           break;
       }
     }

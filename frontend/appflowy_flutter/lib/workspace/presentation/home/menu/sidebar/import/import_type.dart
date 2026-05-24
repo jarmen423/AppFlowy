@@ -9,7 +9,11 @@ enum ImportType {
   historyDatabase,
   markdownOrText,
   csv,
-  afDatabase;
+  afDatabase,
+
+  /// Link (not import/copy) a local Markdown or plain text file as a live-editable
+  /// document page. The file on disk is the source of truth.
+  linkMarkdownOrText;
 
   @override
   String toString() {
@@ -24,6 +28,8 @@ enum ImportType {
         return LocaleKeys.importPanel_csv.tr();
       case ImportType.afDatabase:
         return LocaleKeys.importPanel_database.tr();
+      case ImportType.linkMarkdownOrText:
+        return 'Link local Markdown or text file'; // TODO: add to translations
     }
   }
 
@@ -37,6 +43,7 @@ enum ImportType {
           case ImportType.afDatabase:
             svg = FlowySvgs.board_s;
           case ImportType.markdownOrText:
+          case ImportType.linkMarkdownOrText:
             svg = FlowySvgs.text_s;
         }
 
@@ -52,6 +59,9 @@ enum ImportType {
       case ImportType.historyDocument:
       case ImportType.afDatabase:
         return kDebugMode;
+      case ImportType.linkMarkdownOrText:
+        // gated by FeatureFlag.linkedLocalFiles in the actual handler + desktop check
+        return true;
       default:
         return true;
     }
@@ -65,7 +75,8 @@ enum ImportType {
       case ImportType.afDatabase:
         return ['afdb'];
       case ImportType.markdownOrText:
-        return ['md', 'txt'];
+      case ImportType.linkMarkdownOrText:
+        return ['md', 'txt', 'markdown'];
       case ImportType.csv:
         return ['csv'];
     }
@@ -79,6 +90,8 @@ enum ImportType {
       case ImportType.afDatabase:
       case ImportType.markdownOrText:
         return true;
+      case ImportType.linkMarkdownOrText:
+        return false; // link one file at a time for clarity
     }
   }
 }

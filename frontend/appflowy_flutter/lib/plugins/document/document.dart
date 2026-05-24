@@ -7,6 +7,7 @@ import 'package:appflowy/mobile/presentation/presentation.dart';
 import 'package:appflowy/plugins/document/application/document_appearance_cubit.dart';
 import 'package:appflowy/plugins/document/document_page.dart';
 import 'package:appflowy/plugins/document/presentation/document_collaborators.dart';
+import 'package:appflowy/plugins/document/presentation/local_file/local_file_document_page.dart';
 import 'package:appflowy/plugins/shared/share/share_button.dart';
 import 'package:appflowy/plugins/util.dart';
 import 'package:appflowy/shared/feature_flags.dart';
@@ -25,6 +26,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flowy_infra_ui/flowy_infra_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:universal_platform/universal_platform.dart';
 
 class DocumentPluginBuilder extends PluginBuilder {
   @override
@@ -157,15 +159,29 @@ class DocumentPluginWidgetBuilder extends PluginWidgetBuilder
         ),
       ],
       child: BlocBuilder<DocumentAppearanceCubit, DocumentAppearance>(
-        builder: (_, state) => DocumentPage(
-          key: ValueKey(view.id),
-          view: view,
-          onDeleted: () => context.onDeleted?.call(view, deletedViewIndex),
-          initialSelection: initialSelection,
-          initialBlockId: blockId,
-          fixedTitle: fixedTitle,
-          tabs: tabs,
-        ),
+        builder: (_, state) {
+          // Desktop + linked local file + feature flag enabled → use the live file-backed editor
+          if (UniversalPlatform.isDesktop &&
+              FeatureFlag.linkedLocalFiles.isOn &&
+              view.linkedLocalFile != null) {
+            return LocalFileDocumentPage(
+              key: ValueKey(view.id),
+              view: view,
+              initialSelection: initialSelection,
+            );
+          }
+
+          // Default rich document experience (collab-backed)
+          return DocumentPage(
+            key: ValueKey(view.id),
+            view: view,
+            onDeleted: () => context.onDeleted?.call(view, deletedViewIndex),
+            initialSelection: initialSelection,
+            initialBlockId: blockId,
+            fixedTitle: fixedTitle,
+            tabs: tabs,
+          );
+        },
       ),
     );
   }

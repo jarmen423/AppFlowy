@@ -13,6 +13,7 @@ import 'package:appflowy/plugins/document/document.dart';
 import 'package:appflowy/shared/icon_emoji_picker/icon_picker.dart';
 import 'package:appflowy/startup/plugin/plugin.dart';
 import 'package:appflowy/workspace/application/sidebar/space/space_bloc.dart';
+import 'package:appflowy/plugins/document/presentation/local_file/local_file_info.dart';
 import 'package:appflowy_backend/protobuf/flowy-folder/protobuf.dart';
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:collection/collection.dart';
@@ -50,6 +51,10 @@ class ViewExtKeys {
   static String spaceIconKey = 'space_icon';
   static String spaceIconColorKey = 'space_icon_color';
   static String spacePermissionKey = 'space_permission';
+
+  // linked local file (for live two-way editing of .md / .txt files as document pages)
+  // Value is a JSON string of LinkedFileInfo (see plugins/document/presentation/local_file/local_file_info.dart)
+  static String linkedFileKey = 'linked_file';
 }
 
 extension MinimalViewExtension on FolderViewMinimalPB {
@@ -296,6 +301,26 @@ extension ViewExtension on ViewPB {
       return PageStyleFontLayout.fromString(fontLayout);
     } catch (e) {
       return PageStyleFontLayout.normal;
+    }
+  }
+
+  /// Returns parsed linked local file info if this view represents a
+  /// two-way live-editable link to a local Markdown or text file on disk.
+  /// Only meaningful on desktop; null otherwise or if the extra blob is missing/invalid.
+  LinkedFileInfo? get linkedLocalFile {
+    if (extra.isEmpty) return null;
+    try {
+      final ext = jsonDecode(extra) as Map<String, dynamic>;
+      final raw = ext[ViewExtKeys.linkedFileKey];
+      if (raw is String) {
+        return LinkedFileInfo.tryFromJsonString(raw);
+      }
+      if (raw is Map<String, dynamic>) {
+        return LinkedFileInfo.fromJson(raw);
+      }
+      return null;
+    } catch (_) {
+      return null;
     }
   }
 

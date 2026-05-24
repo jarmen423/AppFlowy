@@ -44,6 +44,10 @@ enum FeatureFlag {
   // used for the shared section
   sharedSection,
 
+  // used for linking and live two-way editing of local Markdown / plain text files
+  // as first-class document pages (desktop-first MVP)
+  linkedLocalFiles,
+
   // used for ignore the conflicted feature flag
   unknown;
 
@@ -109,6 +113,8 @@ enum FeatureFlag {
       FeatureFlag.syncDatabase,
       FeatureFlag.syncDocument,
       FeatureFlag.inlineSubPageMention,
+      // linked local files is opt-in / dev-gated for now (desktop MVP)
+      // FeatureFlag.linkedLocalFiles,
     ].contains(this)) {
       return true;
     }
@@ -128,6 +134,7 @@ enum FeatureFlag {
       case FeatureFlag.membersSettings:
         return true;
       case FeatureFlag.sharedSection:
+      case FeatureFlag.linkedLocalFiles:
       case FeatureFlag.unknown:
         return false;
     }
@@ -153,6 +160,8 @@ enum FeatureFlag {
         return 'if it\'s on, the inline sub-page mention feature will be available';
       case FeatureFlag.sharedSection:
         return 'if it\'s on, the shared section will be available';
+      case FeatureFlag.linkedLocalFiles:
+        return 'if it\'s on, you can link local Markdown/text files as editable document pages (desktop)';
       case FeatureFlag.unknown:
         return '';
     }
