@@ -1,0 +1,100 @@
+name: Build Windows (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: "Build type"
+        required: true
+        default: "debug"
+        type: choice
+        options:
+          - debug
+          - release
+      ref:
+        description: "Branch, tag or commit to build (leave empty for current branch)"
+        required: false
+        default: ""
+
+env:
+  FLUTTER_VERSION: "3.27.4"   # Keep in sync with the project
+  RUST_TOOLCHAIN: "stable"
+  CARGO_MAKE_VERSION: "0.37.18"
+
+jobs:
+  build-windows:
+    name: Build Windows (${{ inputs.build_type }})
+    runs-on: windows-2019   # Same as release workflow for stability
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+
+      - name: Enable long paths (Windows)
+        run: git config --system core.longpaths true
+
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          target: x86_64-pc-windows-msvc
+          override: true
+          profile: minimal
+
+      - name: Install prerequisites
+        working-directory: frontend
+        shell: pwsh
+        run: |
+          vcpkg integrate install
+          cargo install --force --locked cargo-make --version ${{ env.CARGO_MAKE_VERSION }}
+          cargo install --force --locked duckscript_cli
+
+      - name: Enable Windows Desktop
+        run: flutter config --enable-windows-desktop
+
+      - name: Build AppFlowy (Debug / Development)
+        if: inputs.build_type == 'debug'
+        working-directory: frontend
+        shell: pwsh
+        run: |
+          cargo make --profile development-windows-x86 appflowy-dev --verbose
+
+      - name: Build AppFlowy (Release)
+        if: inputs.build_type == 'release'
+        working-directory: frontend
+        shell: pwsh
+        run: |
+          cargo make --profile production-windows-x86 appflowy --verbose
+
+      - name: Prepare artifact
+        shell: pwsh
+        run: |
+          $productDir = "frontend/appflowy_flutter/product"
+          if (Test-Path $productDir) {
+            Compress-Archive -Path $productDir -DestinationPath windows-build-${{ inputs.build_type }}.zip -Force
+          } else {
+            Write-Error "Product directory not found!"
+            exit 1
+          }
+
+      - name: Upload Windows Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AppFlowy-Windows-${{ inputs.build_type }}-${{ github.run_id }}
+          path: windows-build-${{ inputs.build_type }}.zip
+          retention-days: 14
+
+      - name: Summary
+        run: |
+          echo "✅ Windows build completed!"
+          echo "Download the artifact from the Actions run page."
+          echo "Extract it and run the .exe inside the extracted folder."
